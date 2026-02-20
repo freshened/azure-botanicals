@@ -7,8 +7,8 @@ const footerLinks = {
     { label: "Substrate & Pots", href: "/#shop" },
   ],
   About: [
-    { label: "Our Story", href: "/#story" },
-    { label: "Sustainability", href: "/#story" },
+    { label: "Our Story", href: "/about" },
+    { label: "Sustainability", href: "/about" },
   ],
   Support: [
     { label: "Shipping & FAQs", href: "/shipping" },

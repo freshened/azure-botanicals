@@ -31,7 +31,7 @@ export function Navbar() {
               Shop
             </Link>
             <Link
-              href="/#story"
+              href="/about"
               className="text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
             >
               About
@@ -85,7 +85,7 @@ export function Navbar() {
               Shop
             </Link>
             <Link
-              href="/#story"
+              href="/about"
               className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
               onClick={() => setMobileOpen(false)}
             >
