@@ -14,25 +14,11 @@ const products = [
     tag: "Bestseller",
   },
   {
-    name: "Blush Peony Arrangement",
-    price: 195,
-    image: "/images/product-blush-peony.jpg",
-    category: "Fresh Flowers",
-    tag: null,
-  },
-  {
     name: "Fiddle Leaf Fig",
     price: 340,
     image: "/images/product-fiddle-leaf.jpg",
     category: "Rare Plants",
     tag: "New",
-  },
-  {
-    name: "Preserved Pampas Bouquet",
-    price: 165,
-    image: "/images/product-dried-bouquet.jpg",
-    category: "Dried & Preserved",
-    tag: null,
   },
   {
     name: "Monstera Deliciosa",
@@ -42,15 +28,71 @@ const products = [
     tag: "Limited",
   },
   {
+    name: "Blush Peony Arrangement",
+    price: 195,
+    image: "/images/product-blush-peony.jpg",
+    category: "Rare Plants",
+    tag: null,
+  },
+  {
     name: "Garden Rose Collection",
     price: 225,
     image: "/images/product-rose-garden.jpg",
-    category: "Fresh Flowers",
+    category: "Rare Plants",
     tag: "Seasonal",
+  },
+  {
+    name: "Preserved Pampas Bouquet",
+    price: 165,
+    image: "/images/product-dried-bouquet.jpg",
+    category: "Rare Plants",
+    tag: null,
+  },
+  {
+    name: "Alocasia Maharani Starter",
+    price: 45,
+    image: "/placeholder.svg",
+    category: "Tissue Culture",
+    tag: "New",
+  },
+  {
+    name: "Philodendron Pink Princess TC",
+    price: 38,
+    image: "/placeholder.svg",
+    category: "Tissue Culture",
+    tag: null,
+  },
+  {
+    name: "Monstera Albo Node",
+    price: 55,
+    image: "/placeholder.svg",
+    category: "Tissue Culture",
+    tag: "Limited",
+  },
+  {
+    name: "Aroid Potting Mix",
+    price: 24,
+    image: "/placeholder.svg",
+    category: "Substrate & Pots",
+    tag: null,
+  },
+  {
+    name: "Terracotta Pot — 6\"",
+    price: 18,
+    image: "/placeholder.svg",
+    category: "Substrate & Pots",
+    tag: null,
+  },
+  {
+    name: "Ceramic Planter — Medium",
+    price: 32,
+    image: "/placeholder.svg",
+    category: "Substrate & Pots",
+    tag: "Bestseller",
   },
 ]
 
-const categories = ["All", "Rare Plants", "Fresh Flowers", "Dried & Preserved"]
+const categories = ["All", "Rare Plants", "Tissue Culture", "Substrate & Pots"]
 
 function ProductCard({
   product,

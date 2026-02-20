@@ -2,10 +2,9 @@ import Link from "next/link"
 
 const footerLinks = {
   Shop: [
-    { label: "All Plants", href: "/#shop" },
-    { label: "Fresh Flowers", href: "/#shop" },
-    { label: "Dried & Preserved", href: "/#shop" },
-    { label: "Rare Collection", href: "/#shop" },
+    { label: "Rare Plants", href: "/#shop" },
+    { label: "Tissue Culture", href: "/#shop" },
+    { label: "Substrate & Pots", href: "/#shop" },
   ],
   About: [
     { label: "Our Story", href: "/#story" },
