@@ -1,7 +1,10 @@
 import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
-
+import { Navbar } from "@/components/navbar"
+import { Footer } from "@/components/footer"
+import { MarqueeBanner } from "@/components/marquee-banner"
+import { TopAnnouncement } from "@/components/top-announcement"
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -36,7 +39,13 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${dmSans.variable} font-sans antialiased`}
       >
-        {children}
+        <Navbar />
+        <div className="pt-16 lg:pt-20">
+          <TopAnnouncement />
+          <MarqueeBanner />
+          <main>{children}</main>
+          <Footer />
+        </div>
       </body>
     </html>
   )

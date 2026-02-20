@@ -1,17 +1,30 @@
 import Link from "next/link"
 
 const footerLinks = {
-  Shop: ["All Plants", "Fresh Flowers", "Dried & Preserved", "Rare Collection", "Gift Cards"],
-  About: ["Our Story", "Sustainability", "Press", "Careers"],
-  Support: ["Contact", "Shipping & Returns", "Care Guides", "FAQ"],
+  Shop: [
+    { label: "All Plants", href: "/#shop" },
+    { label: "Fresh Flowers", href: "/#shop" },
+    { label: "Dried & Preserved", href: "/#shop" },
+    { label: "Rare Collection", href: "/#shop" },
+  ],
+  About: [
+    { label: "Our Story", href: "/#story" },
+    { label: "Sustainability", href: "/#story" },
+  ],
+  Support: [
+    { label: "Shipping & FAQs", href: "/shipping" },
+    { label: "Refund / Cancellation", href: "/refund-policy" },
+    { label: "Contact Us", href: "/contact" },
+  ],
 }
+
+const INSTAGRAM_URL = "https://instagram.com/azurebotanicals"
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-card">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 py-16 lg:py-20">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Brand */}
           <div className="lg:col-span-1">
             <h3 className="font-serif text-xl tracking-wider">
               Azure Botanicals
@@ -22,19 +35,13 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-4 mt-6">
               <Link
-                href="#"
-                className="font-sans text-xs tracking-wider text-muted-foreground hover:text-accent transition-colors uppercase"
-                aria-label="Instagram"
+                href={INSTAGRAM_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-sans text-xs tracking-wider text-accent hover:underline transition-colors uppercase font-medium"
+                aria-label="Follow us on Instagram"
               >
                 Instagram
-              </Link>
-              <span className="text-border">|</span>
-              <Link
-                href="#"
-                className="font-sans text-xs tracking-wider text-muted-foreground hover:text-accent transition-colors uppercase"
-                aria-label="Pinterest"
-              >
-                Pinterest
               </Link>
             </div>
           </div>
@@ -47,12 +54,12 @@ export function Footer() {
               </h4>
               <ul className="space-y-3">
                 {links.map((link) => (
-                  <li key={link}>
+                  <li key={link.label}>
                     <Link
-                      href="#"
+                      href={link.href}
                       className="font-sans text-sm text-muted-foreground hover:text-accent transition-colors"
                     >
-                      {link}
+                      {link.label}
                     </Link>
                   </li>
                 ))}
@@ -68,13 +75,13 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-6">
             <Link
-              href="#"
+              href="/privacy"
               className="font-sans text-xs text-muted-foreground hover:text-accent transition-colors"
             >
               Privacy Policy
             </Link>
             <Link
-              href="#"
+              href="/terms"
               className="font-sans text-xs text-muted-foreground hover:text-accent transition-colors"
             >
               Terms of Service

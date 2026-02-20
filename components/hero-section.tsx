@@ -27,15 +27,14 @@ export function HeroSection() {
             Nature{"'"}s most exquisite creations, delivered
           </h2>
           <p className="mt-8 font-sans text-base md:text-lg leading-relaxed text-foreground max-w-lg">
-            Discover rare botanicals and artisan arrangements crafted for those
-            who appreciate the extraordinary beauty of the natural world.
+            Discover rare botanicals and artisan arrangements crafted for those who appreciate the extraordinary beauty of the natural world.
           </p>
           <div className="mt-10 flex flex-wrap items-center gap-4">
             <Link
-              href="#products"
+              href="#shop"
               className="inline-flex items-center justify-center px-8 py-3.5 bg-primary text-primary-foreground font-sans text-sm tracking-wide uppercase hover:bg-foreground/80 transition-colors"
             >
-              Shop Collection
+              Shop Plants
             </Link>
             <Link
               href="#story"

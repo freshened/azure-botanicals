@@ -25,22 +25,22 @@ export function Navbar() {
           {/* Left nav */}
           <div className="hidden lg:flex items-center gap-8">
             <Link
-              href="#"
+              href="/#shop"
               className="text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
             >
               Shop
             </Link>
             <Link
-              href="#"
-              className="text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
-            >
-              Collections
-            </Link>
-            <Link
-              href="#"
+              href="/#story"
               className="text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
             >
               About
+            </Link>
+            <Link
+              href="/shipping"
+              className="text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
+            >
+              Shipping & FAQs
             </Link>
           </div>
 
@@ -48,9 +48,9 @@ export function Navbar() {
             <Image
               src="/images/logo.png"
               alt="Azure Botanicals"
-              width={140}
-              height={48}
-              className="h-10 w-auto lg:h-12"
+              width={180}
+              height={60}
+              className="h-12 w-auto lg:h-14"
               priority
             />
           </Link>
@@ -78,32 +78,32 @@ export function Navbar() {
         <div className="lg:hidden border-t border-border/50 bg-background/95 backdrop-blur-md">
           <div className="flex flex-col gap-1 px-6 py-6">
             <Link
-              href="#"
+              href="/#shop"
               className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
               onClick={() => setMobileOpen(false)}
             >
               Shop
             </Link>
             <Link
-              href="#"
-              className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
-              onClick={() => setMobileOpen(false)}
-            >
-              Collections
-            </Link>
-            <Link
-              href="#"
+              href="/#story"
               className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
               onClick={() => setMobileOpen(false)}
             >
               About
             </Link>
             <Link
-              href="#"
+              href="/shipping"
               className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
               onClick={() => setMobileOpen(false)}
             >
-              Account
+              Shipping & FAQs
+            </Link>
+            <Link
+              href="/contact"
+              className="py-3 text-sm font-sans tracking-wide text-foreground hover:text-accent transition-colors uppercase"
+              onClick={() => setMobileOpen(false)}
+            >
+              Contact
             </Link>
           </div>
         </div>

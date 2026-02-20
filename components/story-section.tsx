@@ -1,5 +1,4 @@
 import Image from "next/image"
-import Link from "next/link"
 
 export function StorySection() {
   return (
@@ -17,61 +16,24 @@ export function StorySection() {
             />
           </div>
 
-          {/* Content */}
           <div className="lg:pl-4">
             <p className="font-sans text-xs tracking-[0.3em] uppercase text-accent mb-6">
               Our Story
             </p>
             <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight leading-[1.15]">
-              Rooted in passion, grown with purpose
+              Heritage, symbolism, and reverence for nature
             </h2>
             <div className="mt-8 space-y-5 font-sans text-base leading-relaxed text-muted-foreground">
               <p>
-                Azure Botanicals was born from a deep reverence for the natural
-                world and a belief that exceptional plants and flowers deserve to
-                be presented with the care and artistry they inspire.
+                The name Azure Botanicals is rooted in heritage, symbolism, and reverence for nature. Drawing from Chinese mythology, it is inspired by the Azure Dragon (Qīnglóng), one of the Four Sacred Beasts and a powerful celestial guardian.
               </p>
               <p>
-                Every botanical in our collection is hand-selected from trusted
-                growers and artisan nurseries around the world. We seek out the
-                rare, the extraordinary, and the breathtakingly beautiful.
+                The Azure Dragon represents the East, the spring season, and the Wood element, embodying renewal, growth, and life&apos;s continual unfolding. Revered as a divine protector, it is believed to command rain, wind, and the changing seasons, forces essential to the vitality of the natural world.
+              </p>
+              <p>
+                As a symbol of strength, longevity, and balance, the Azure Dragon reflects the philosophy behind Azure Botanicals: honoring nature&apos;s intelligence, cultivating resilience, and nurturing growth with intention. The name serves as a bridge between ancestral wisdom and modern botanical care. Where tradition, protection, and the living world are deeply intertwined.
               </p>
             </div>
-
-            {/* Stats */}
-            <div className="mt-12 grid grid-cols-3 gap-8">
-              <div>
-                <p className="font-serif text-3xl lg:text-4xl" style={{ color: "hsl(38 41% 59%)" }}>
-                  200+
-                </p>
-                <p className="mt-1 font-sans text-xs tracking-wide text-muted-foreground uppercase">
-                  Rare Species
-                </p>
-              </div>
-              <div>
-                <p className="font-serif text-3xl lg:text-4xl" style={{ color: "hsl(38 41% 59%)" }}>
-                  12
-                </p>
-                <p className="mt-1 font-sans text-xs tracking-wide text-muted-foreground uppercase">
-                  Countries
-                </p>
-              </div>
-              <div>
-                <p className="font-serif text-3xl lg:text-4xl" style={{ color: "hsl(38 41% 59%)" }}>
-                  5k+
-                </p>
-                <p className="mt-1 font-sans text-xs tracking-wide text-muted-foreground uppercase">
-                  Happy Homes
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="#"
-              className="inline-flex items-center justify-center mt-10 px-8 py-3.5 bg-primary text-primary-foreground font-sans text-sm tracking-wide uppercase hover:bg-foreground/80 transition-colors"
-            >
-              Learn More
-            </Link>
           </div>
         </div>
       </div>
