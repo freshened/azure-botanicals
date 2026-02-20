@@ -3,8 +3,6 @@
 import { useState } from "react"
 import Image from "next/image"
 import { Heart } from "lucide-react"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-
 const products = [
   {
     name: "White Phalaenopsis Orchid",
@@ -92,8 +90,6 @@ const products = [
   },
 ]
 
-const categories = ["All", "Rare Plants", "Tissue Culture", "Substrate & Pots"]
-
 function ProductCard({
   product,
 }: {
@@ -151,8 +147,6 @@ function ProductCard({
 }
 
 export function ShopPlantsSection() {
-  const [category, setCategory] = useState("All")
-
   return (
     <section id="shop" className="py-24 lg:py-32 bg-card">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -165,28 +159,11 @@ export function ShopPlantsSection() {
           </h2>
         </div>
 
-        <Tabs value={category} onValueChange={setCategory} className="w-full">
-          <TabsList className="w-full flex flex-wrap justify-start gap-2 h-auto p-0 bg-transparent border-b border-border rounded-none">
-            {categories.map((cat) => (
-              <TabsTrigger
-                key={cat}
-                value={cat}
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-accent data-[state=active]:bg-transparent data-[state=active]:shadow-none font-sans text-sm tracking-wide uppercase"
-              >
-                {cat}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {categories.map((cat) => (
-            <TabsContent key={cat} value={cat} className="mt-10 border-0 p-0">
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
-                {(cat === "All" ? products : products.filter((p) => p.category === cat)).map((product) => (
-                  <ProductCard key={product.name} product={product} />
-                ))}
-              </div>
-            </TabsContent>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
+          {products.map((product) => (
+            <ProductCard key={product.name} product={product} />
           ))}
-        </Tabs>
+        </div>
       </div>
     </section>
   )
