@@ -5,6 +5,9 @@ const nextConfig = {
   },
   images: {
     unoptimized: true,
+    remotePatterns: [
+      { protocol: "https", hostname: "files.stripe.com", pathname: "/**" },
+    ],
   },
 }
 

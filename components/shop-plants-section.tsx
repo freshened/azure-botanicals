@@ -1,112 +1,53 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Heart } from "lucide-react"
-const products = [
-  {
-    name: "White Phalaenopsis Orchid",
-    price: 285,
-    image: "/images/product-white-orchid.jpg",
-    category: "Rare Plants",
-    tag: "Bestseller",
-  },
-  {
-    name: "Fiddle Leaf Fig",
-    price: 340,
-    image: "/images/product-fiddle-leaf.jpg",
-    category: "Rare Plants",
-    tag: "New",
-  },
-  {
-    name: "Monstera Deliciosa",
-    price: 420,
-    image: "/images/product-monstera.jpg",
-    category: "Rare Plants",
-    tag: "Limited",
-  },
-  {
-    name: "Blush Peony Arrangement",
-    price: 195,
-    image: "/images/product-blush-peony.jpg",
-    category: "Rare Plants",
-    tag: null,
-  },
-  {
-    name: "Garden Rose Collection",
-    price: 225,
-    image: "/images/product-rose-garden.jpg",
-    category: "Rare Plants",
-    tag: "Seasonal",
-  },
-  {
-    name: "Preserved Pampas Bouquet",
-    price: 165,
-    image: "/images/product-dried-bouquet.jpg",
-    category: "Rare Plants",
-    tag: null,
-  },
-  {
-    name: "Alocasia Maharani Starter",
-    price: 45,
-    image: "/placeholder.svg",
-    category: "Tissue Culture",
-    tag: "New",
-  },
-  {
-    name: "Philodendron Pink Princess TC",
-    price: 38,
-    image: "/placeholder.svg",
-    category: "Tissue Culture",
-    tag: null,
-  },
-  {
-    name: "Monstera Albo Node",
-    price: 55,
-    image: "/placeholder.svg",
-    category: "Tissue Culture",
-    tag: "Limited",
-  },
-  {
-    name: "Aroid Potting Mix",
-    price: 24,
-    image: "/placeholder.svg",
-    category: "Substrate & Pots",
-    tag: null,
-  },
-  {
-    name: "Terracotta Pot — 6\"",
-    price: 18,
-    image: "/placeholder.svg",
-    category: "Substrate & Pots",
-    tag: null,
-  },
-  {
-    name: "Ceramic Planter — Medium",
-    price: 32,
-    image: "/placeholder.svg",
-    category: "Substrate & Pots",
-    tag: "Bestseller",
-  },
-]
+import { useCart } from "@/contexts/cart-context"
 
-function ProductCard({
-  product,
-}: {
-  product: (typeof products)[0]
-}) {
+export type ShopProduct = {
+  id: string
+  priceId: string | null
+  name: string
+  price: number
+  currency: string
+  image: string
+  images: string[]
+  category: string
+  tag: string | null
+}
+
+function ProductCard({ product }: { product: ShopProduct }) {
   const [liked, setLiked] = useState(false)
+  const [imageIndex, setImageIndex] = useState(0)
+  const { addItem } = useCart()
+  const images = product.images?.length ? product.images : [product.image]
+  const currentImage = images[imageIndex] || product.image || "/placeholder.svg"
 
   return (
     <div className="group">
       <div className="relative aspect-[3/4] overflow-hidden bg-card mb-4">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={currentImage}
           alt={product.name}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-105"
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+          unoptimized={currentImage.startsWith("http")}
         />
+        {images.length > 1 && (
+          <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Image ${i + 1}`}
+                onClick={(e) => { e.preventDefault(); setImageIndex(i) }}
+                className={`h-1.5 rounded-full transition-all ${i === imageIndex ? "w-4 bg-primary-foreground" : "w-1.5 bg-primary-foreground/40"}`}
+              />
+            ))}
+          </div>
+        )}
         <button
           type="button"
           onClick={() => setLiked(!liked)}
@@ -125,7 +66,21 @@ function ProductCard({
         <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500">
           <button
             type="button"
-            className="w-full py-3 bg-primary text-primary-foreground font-sans text-xs tracking-[0.15em] uppercase hover:bg-foreground/80 transition-colors"
+            disabled={!product.priceId}
+            onClick={(e) => {
+              e.preventDefault()
+              if (product.priceId) {
+                addItem({
+                  priceId: product.priceId,
+                  productId: product.id,
+                  name: product.name,
+                  image: product.image,
+                  price: product.price,
+                  currency: product.currency,
+                })
+              }
+            }}
+            className="w-full py-3 bg-primary text-primary-foreground font-sans text-xs tracking-[0.15em] uppercase hover:bg-foreground/80 transition-colors disabled:opacity-50"
           >
             Add to Bag
           </button>
@@ -139,7 +94,8 @@ function ProductCard({
           {product.name}
         </h3>
         <p className="mt-1 font-sans text-sm text-foreground">
-          ${product.price}
+          {product.currency === "USD" ? "$" : product.currency + " "}
+          {product.price}
         </p>
       </div>
     </div>
@@ -147,6 +103,66 @@ function ProductCard({
 }
 
 export function ShopPlantsSection() {
+  const [products, setProducts] = useState<ShopProduct[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/products")
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load products")
+        return res.json()
+      })
+      .then(setProducts)
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) {
+    return (
+      <section id="shop" className="py-24 lg:py-32 bg-card">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-12 lg:mb-16">
+            <p className="font-sans text-xs tracking-[0.3em] uppercase text-accent mb-4">
+              Shop
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight">
+              Shop Plants
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
+            {[...Array(10)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-[3/4] bg-muted rounded-lg mb-4" />
+                <div className="h-3 bg-muted rounded w-1/3 mb-2" />
+                <div className="h-5 bg-muted rounded w-2/3 mb-1" />
+                <div className="h-4 bg-muted rounded w-1/4" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  if (error) {
+    return (
+      <section id="shop" className="py-24 lg:py-32 bg-card">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="mb-12 lg:mb-16">
+            <p className="font-sans text-xs tracking-[0.3em] uppercase text-accent mb-4">
+              Shop
+            </p>
+            <h2 className="font-serif text-3xl md:text-4xl lg:text-5xl tracking-tight">
+              Shop Plants
+            </h2>
+          </div>
+          <p className="font-sans text-muted-foreground">{error}</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section id="shop" className="py-24 lg:py-32 bg-card">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
@@ -161,7 +177,7 @@ export function ShopPlantsSection() {
 
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-x-4 gap-y-10 lg:gap-x-6 lg:gap-y-12">
           {products.map((product) => (
-            <ProductCard key={product.name} product={product} />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

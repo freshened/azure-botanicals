@@ -34,7 +34,7 @@ export function TestimonialsSection() {
     <section className="py-24 lg:py-32 bg-secondary/30">
       <div className="mx-auto max-w-4xl px-6 lg:px-8 text-center">
         <p className="font-sans text-xs tracking-[0.3em] uppercase text-accent mb-12">
-          Recognition
+          Let our customers speak for us
         </p>
 
         <div className="relative min-h-[200px] flex items-center justify-center">

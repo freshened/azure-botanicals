@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
-import { MarqueeBanner } from "@/components/marquee-banner"
-import { TopAnnouncement } from "@/components/top-announcement"
+import { RotatingBanner } from "@/components/rotating-banner"
+import { CartProvider } from "@/contexts/cart-context"
 import './globals.css'
 
 const playfair = Playfair_Display({
@@ -39,13 +39,14 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${dmSans.variable} font-sans antialiased`}
       >
-        <Navbar />
-        <div className="pt-16 lg:pt-20">
-          <TopAnnouncement />
-          <MarqueeBanner />
+        <CartProvider>
+          <Navbar />
+          <div className="pt-16 lg:pt-20">
+          <RotatingBanner />
           <main>{children}</main>
           <Footer />
         </div>
+        </CartProvider>
       </body>
     </html>
   )

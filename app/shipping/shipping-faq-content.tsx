@@ -10,19 +10,15 @@ import {
 const shippingItems = [
   {
     q: "When will my order be shipped?",
-    a: "Processing time usually takes around 1–3 business days. We ship plants on select days to ensure packages don't sit in transit over weekends. You will receive a confirmation email with tracking once your order is processed.",
+    a: "Processing time usually takes around 1–3 business days. We ship plants on Mondays to ensure packages don't sit in transit over weekends. You will receive a confirmation email with tracking once your order is processed.",
   },
   {
     q: "Where do you ship from and to?",
-    a: "Plants are shipped from our nursery. We currently ship within the US. No international shipping at this time.",
-  },
-  {
-    q: "How are plants packed?",
-    a: "All live plants are safely packed and secured using materials such as polyfill, cardboard, and cushioning to ensure safe transit.",
+    a: "Plants are shipped from our licensed nursery based in California. We ship only within the US. No international shipping at this time.",
   },
   {
     q: "Winter shipping for plants?",
-    a: "We check destination weather before shipping to ensure safe arrival. Insulated wrap is provided when needed. Heat packs may be added for free if your local weather is below a set threshold.",
+    a: "Please check your weather before shipping to ensure safe arrival. If temps are 40°F - 50°F, we recommend adding 72 hr heat pack with insulation. If temps are below 40°F, we recommend adding 72 hr heat pack with double insulation thermal wrap. If temps are above 90°F, we recommend adding cold pack with insulation.",
   },
 ]
 
@@ -33,7 +29,7 @@ const faqItems = [
   },
   {
     q: "Live arrival guarantee?",
-    a: "We guarantee live arrival when an unpacking video is sent within the required time upon arrival, and the package arrives without transportation or weather damage. Minor leaf or stem damage from shipping can sometimes occur. Please bring the plant indoors as soon as it's delivered.",
+    a: "We guarantee live arrival for UPS Next day shipping only. Unboxing video must be sent within 2 hours upon arrival, given that the package arrives without transportation delay or weather damage. Video needs to start before the box is opened. Please bring plants in as soon as it's delivered. Note: Shipping stress and damage may occur even with the most careful packaging. Minor damage to leaf/stem is sometimes unavoidable. We are not responsible for any shipping-related damage.",
   },
   {
     q: "Cancellation policy?",

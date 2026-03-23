@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { ShoppingBag, Search, Menu, X, User, ChevronDown } from "lucide-react"
 import {
   DropdownMenu,
@@ -10,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCart } from "@/contexts/cart-context"
 
 const shopCategories = [
   { label: "Rare Plants", href: "/#shop" },
@@ -18,8 +20,10 @@ const shopCategories = [
 ]
 
 export function Navbar() {
+  const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false)
+  const { items, removeItem, total, count, updateQuantity } = useCart()
 
   useEffect(() => {
     if (!mobileOpen) setShopDropdownOpen(false)
@@ -88,12 +92,64 @@ export function Navbar() {
             <button type="button" aria-label="Account" className="hidden lg:block text-foreground hover:text-accent transition-colors">
               <User className="h-[18px] w-[18px]" />
             </button>
-            <button type="button" aria-label="Shopping bag" className="relative text-foreground hover:text-accent transition-colors">
-              <ShoppingBag className="h-4 w-4 lg:h-[18px] lg:w-[18px]" />
-              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-sans font-medium text-accent-foreground">
-                0
-              </span>
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button type="button" aria-label="Shopping bag" className="relative text-foreground hover:text-accent transition-colors">
+                  <ShoppingBag className="h-4 w-4 lg:h-[18px] lg:w-[18px]" />
+                  <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] font-sans font-medium text-accent-foreground">
+                    {count}
+                  </span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 p-0">
+                <div className="p-3 border-b border-border">
+                  <p className="font-sans text-sm font-medium">Bag ({count})</p>
+                </div>
+                {items.length === 0 ? (
+                  <div className="p-4 font-sans text-sm text-muted-foreground">
+                    Your bag is empty.
+                  </div>
+                ) : (
+                  <>
+                    <div className="max-h-60 overflow-y-auto">
+                      {items.map((item) => (
+                        <div key={item.priceId} className="flex gap-3 p-3 border-b border-border/50">
+                          <div className="relative w-12 h-12 shrink-0 rounded overflow-hidden bg-muted">
+                            <Image src={item.image} alt="" fill className="object-cover" unoptimized={item.image.startsWith("http")} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-sans text-sm truncate">{item.name}</p>
+                            <p className="font-sans text-xs text-muted-foreground">
+                              ${item.price} × {item.quantity}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <button type="button" onClick={() => updateQuantity(item.priceId, item.quantity - 1)} className="text-xs text-muted-foreground hover:text-foreground">−</button>
+                              <span className="text-xs">{item.quantity}</span>
+                              <button type="button" onClick={() => updateQuantity(item.priceId, item.quantity + 1)} className="text-xs text-muted-foreground hover:text-foreground">+</button>
+                              <button type="button" onClick={() => removeItem(item.priceId)} className="text-xs text-destructive hover:underline ml-1">Remove</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-3 border-t border-border flex justify-between items-center">
+                      <span className="font-sans text-sm font-medium">Total</span>
+                      <span className="font-sans text-sm">${total.toFixed(2)}</span>
+                    </div>
+                    <div className="p-3">
+                      <button
+                        type="button"
+                        disabled={items.length === 0}
+                        onClick={() => router.push("/checkout")}
+                        className="w-full py-2.5 bg-primary text-primary-foreground font-sans text-sm font-medium rounded-md hover:bg-primary/90 disabled:opacity-50"
+                      >
+                        Checkout
+                      </button>
+                    </div>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </nav>

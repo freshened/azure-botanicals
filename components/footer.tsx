@@ -8,7 +8,8 @@ const footerLinks = {
   ],
   About: [
     { label: "Our Story", href: "/about" },
-    { label: "Sustainability", href: "/about" },
+    { label: "Terms of Service", href: "/terms" },
+    { label: "Privacy Policy", href: "/privacy" },
   ],
   Support: [
     { label: "Shipping & FAQs", href: "/shipping" },
@@ -67,25 +68,14 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom bar */}
+        <p className="mt-12 font-sans text-xs text-muted-foreground max-w-2xl">
+          This website may not be fully accessible to individuals with disabilities. We are committed to improving the experience for all users and welcome feedback.
+        </p>
+
         <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="font-sans text-xs text-muted-foreground">
             2025 Azure Botanicals. All rights reserved.
           </p>
-          <div className="flex items-center gap-6">
-            <Link
-              href="/privacy"
-              className="font-sans text-xs text-muted-foreground hover:text-accent transition-colors"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              href="/terms"
-              className="font-sans text-xs text-muted-foreground hover:text-accent transition-colors"
-            >
-              Terms of Service
-            </Link>
-          </div>
         </div>
       </div>
     </footer>
