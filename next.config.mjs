@@ -7,6 +7,7 @@ const nextConfig = {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "files.stripe.com", pathname: "/**" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com", pathname: "/**" },
     ],
   },
 }

@@ -2,7 +2,7 @@ import React from "react"
 import type { Metadata, Viewport } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
+import { ConditionalFooter } from "@/components/conditional-footer"
 import { RotatingBanner } from "@/components/rotating-banner"
 import { CartProvider } from "@/contexts/cart-context"
 import './globals.css'
@@ -44,7 +44,7 @@ export default function RootLayout({
           <div className="pt-16 lg:pt-20">
           <RotatingBanner />
           <main>{children}</main>
-          <Footer />
+          <ConditionalFooter />
         </div>
         </CartProvider>
       </body>

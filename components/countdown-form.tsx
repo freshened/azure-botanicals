@@ -15,6 +15,7 @@ function toLocalDatetime(iso: string): string {
 
 export function CountdownForm() {
   const [target, setTarget] = useState("")
+  const [countdownEnabled, setCountdownEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null)
@@ -24,6 +25,7 @@ export function CountdownForm() {
       .then((res) => res.json())
       .then((data) => {
         if (data?.target) setTarget(toLocalDatetime(data.target))
+        if (typeof data?.countdownEnabled === "boolean") setCountdownEnabled(data.countdownEnabled)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -36,7 +38,10 @@ export function CountdownForm() {
     fetch("/api/countdown", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ target: new Date(target).toISOString() }),
+      body: JSON.stringify({
+        target: new Date(target).toISOString(),
+        countdownEnabled,
+      }),
     })
       .then((res) => {
         if (res.ok) setMessage({ type: "ok", text: "Countdown updated." })
@@ -52,8 +57,38 @@ export function CountdownForm() {
     )
   }
 
+  const saveToggle = (next: boolean) => {
+    setCountdownEnabled(next)
+    setSaving(true)
+    setMessage(null)
+    fetch("/api/countdown", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ countdownEnabled: next }),
+    })
+      .then((res) => {
+        if (res.ok) setMessage({ type: "ok", text: next ? "Countdown shown in banner." : "Countdown hidden from banner." })
+        else return res.json().then((d) => { throw new Error(d?.error || "Failed") })
+      })
+      .catch((err) => setMessage({ type: "error", text: err.message || "Failed to save." }))
+      .finally(() => setSaving(false))
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="flex items-center gap-3">
+        <input
+          id="countdown-enabled"
+          type="checkbox"
+          checked={countdownEnabled}
+          onChange={(e) => saveToggle(e.target.checked)}
+          disabled={saving}
+          className="h-4 w-4 rounded border-input"
+        />
+        <label htmlFor="countdown-enabled" className="font-sans text-sm text-foreground">
+          Show countdown in site banner
+        </label>
+      </div>
       <div>
         <label htmlFor="countdown-target" className="block font-sans text-xs font-medium text-foreground mb-1.5">
           New plant drop date & time

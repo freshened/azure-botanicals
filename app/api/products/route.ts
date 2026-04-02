@@ -1,6 +1,29 @@
 import { NextResponse } from "next/server"
 import type Stripe from "stripe"
+import { resolveOrderedGallery } from "@/lib/product-gallery"
+import { isDatabaseConfigured, prisma } from "@/lib/prisma"
 import { requireConnectedAccountId, requireStripeSecretKey, stripe } from "@/lib/stripe-connect"
+
+async function dbGalleryUrlsByProductIds(ids: string[]) {
+  if (!isDatabaseConfigured() || ids.length === 0) {
+    return new Map<string, string[]>()
+  }
+  try {
+    const rows = await prisma.productExtraImage.findMany({
+      where: { stripeProductId: { in: ids } },
+      orderBy: [{ stripeProductId: "asc" }, { sortOrder: "asc" }],
+    })
+    const map = new Map<string, string[]>()
+    for (const row of rows) {
+      const list = map.get(row.stripeProductId) ?? []
+      list.push(row.imageUrl)
+      map.set(row.stripeProductId, list)
+    }
+    return map
+  } catch {
+    return new Map<string, string[]>()
+  }
+}
 
 export async function GET() {
   try {
@@ -16,12 +39,18 @@ export async function GET() {
       }
     )
 
+    const ids = products.map((p) => p.id)
+    const dbMap = await dbGalleryUrlsByProductIds(ids)
+
     const items = products.map((p) => {
       const defaultPrice = p.default_price as Stripe.Price | null
       const amount = defaultPrice?.unit_amount ?? 0
       const currency = (defaultPrice?.currency ?? "usd").toUpperCase()
-      const images = Array.isArray(p.images) && p.images.length > 0 ? p.images : []
-      const image = images[0] || "/placeholder.svg"
+      const stripeImages = Array.isArray(p.images) && p.images.length > 0 ? p.images : []
+      const stripeMain = stripeImages[0] || ""
+      const dbUrls = dbMap.get(p.id) ?? []
+      const merged = resolveOrderedGallery(stripeMain || undefined, dbUrls)
+      const images = merged.length > 0 ? merged : ["/placeholder.svg"]
       const metadata = (p.metadata || {}) as Record<string, string>
 
       return {
@@ -30,8 +59,9 @@ export async function GET() {
         name: p.name,
         price: amount / 100,
         currency,
-        image,
-        images: images.length > 0 ? images : ["/placeholder.svg"],
+        image: images[0],
+        images,
+        extraImageUrls: dbUrls,
         category: metadata.category ?? "Shop",
         tag: metadata.tag || null,
       }
@@ -115,7 +145,6 @@ export async function PATCH(request: Request) {
       priceInCents?: number
       category?: string
       tag?: string
-      imageUrl?: string
     }
 
     const productId = body.productId?.trim()
@@ -123,7 +152,6 @@ export async function PATCH(request: Request) {
     const description = body.description?.trim() || ""
     const category = body.category?.trim() || "Shop"
     const tag = body.tag?.trim() || ""
-    const imageUrl = body.imageUrl?.trim() || ""
     const currency = "usd"
     const priceInCents =
       Number.isFinite(body.priceInCents) && body.priceInCents !== undefined
@@ -145,7 +173,6 @@ export async function PATCH(request: Request) {
       {
         name,
         description,
-        images: imageUrl ? [imageUrl] : [],
         metadata: {
           category,
           tag,
@@ -206,6 +233,16 @@ export async function DELETE(request: Request) {
         stripeAccount: accountId,
       }
     )
+
+    if (isDatabaseConfigured()) {
+      try {
+        await prisma.productExtraImage.deleteMany({
+          where: { stripeProductId: productId },
+        })
+      } catch {
+        // ignore
+      }
+    }
 
     return NextResponse.json({ ok: true })
   } catch (err) {

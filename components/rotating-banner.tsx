@@ -36,9 +36,14 @@ function CountdownClock({ target }: { target: Date }) {
 
 const SLOT_DURATION_MS = 5000
 
+type BannerSlot = 0 | 1 | 2
+
 export function RotatingBanner() {
   const [index, setIndex] = useState(0)
   const [countdownTarget, setCountdownTarget] = useState<Date>(DEFAULT_TARGET)
+  const [countdownEnabled, setCountdownEnabled] = useState(true)
+  const slots: BannerSlot[] = countdownEnabled ? [0, 1, 2] : [0, 2]
+  const slotCount = slots.length
 
   useEffect(() => {
     const load = () => {
@@ -49,6 +54,9 @@ export function RotatingBanner() {
             const d = new Date(data.target)
             if (!Number.isNaN(d.getTime())) setCountdownTarget(d)
           }
+          if (typeof data?.countdownEnabled === "boolean") {
+            setCountdownEnabled(data.countdownEnabled)
+          }
         })
         .catch(() => {})
     }
@@ -58,21 +66,25 @@ export function RotatingBanner() {
   }, [])
 
   useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % 3), SLOT_DURATION_MS)
+    setIndex((i) => Math.min(i, slotCount - 1))
+  }, [slotCount])
+
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % slotCount), SLOT_DURATION_MS)
     return () => clearInterval(id)
-  }, [])
+  }, [slotCount])
 
   return (
     <div className="bg-primary text-primary-foreground py-2.5">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 flex items-center justify-center gap-4 min-h-[2.5rem]">
         <div className="text-center font-sans text-[11px] tracking-[0.15em] uppercase flex-1">
-          {index === 0 && "Curated Botanical Luxury"}
-          {index === 1 && (
+          {slots[index] === 0 && "Curated Botanical Luxury"}
+          {slots[index] === 1 && (
             <>
               New plant drop in <CountdownClock target={countdownTarget} />
             </>
           )}
-          {index === 2 && (
+          {slots[index] === 2 && (
             <Link
               href={INSTAGRAM_URL}
               target="_blank"
@@ -84,9 +96,9 @@ export function RotatingBanner() {
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {[0, 1, 2].map((i) => (
+          {slots.map((slot, i) => (
             <button
-              key={i}
+              key={slot}
               type="button"
               aria-label={`Go to banner ${i + 1}`}
               onClick={() => setIndex(i)}

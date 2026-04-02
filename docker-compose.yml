@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: azure-botanicals-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: azure
+      POSTGRES_PASSWORD: azure
+      POSTGRES_DB: azure_botanicals
+    ports:
+      - "5433:5432"
+    volumes:
+      - azure_botanicals_pgdata:/var/lib/postgresql/data
+
+volumes:
+  azure_botanicals_pgdata:

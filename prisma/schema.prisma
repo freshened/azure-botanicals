@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model ProductExtraImage {
+  id              String   @id @default(cuid())
+  stripeProductId String   @map("stripe_product_id")
+  imageUrl        String   @map("image_url")
+  sortOrder       Int      @default(0) @map("sort_order")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([stripeProductId])
+  @@map("azure_product_extra_images")
+}

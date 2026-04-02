@@ -8,6 +8,8 @@ import { useCart } from "@/contexts/cart-context"
 type CheckoutIntent = {
   clientSecret: string
   publishableKey: string
+  stripeAccountId?: string
+  checkoutMode?: "platform_only" | "connect_direct_charge"
 }
 
 function CheckoutInner({ onPaid }: { onPaid: () => void }) {
@@ -92,6 +94,8 @@ export function CheckoutForm() {
         setIntent({
           clientSecret: data.clientSecret,
           publishableKey: data.publishableKey,
+          stripeAccountId: data.stripeAccountId,
+          checkoutMode: data.checkoutMode,
         })
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Failed to initialize checkout."))
@@ -100,8 +104,13 @@ export function CheckoutForm() {
 
   const stripePromise = useMemo(() => {
     if (!intent?.publishableKey) return null
+    if (intent.checkoutMode === "connect_direct_charge" && intent.stripeAccountId) {
+      return loadStripe(intent.publishableKey, {
+        stripeAccount: intent.stripeAccountId,
+      })
+    }
     return loadStripe(intent.publishableKey)
-  }, [intent?.publishableKey])
+  }, [intent?.publishableKey, intent?.checkoutMode, intent?.stripeAccountId])
 
   if (items.length === 0) {
     return <p className="font-sans text-sm text-muted-foreground">Your bag is empty.</p>
