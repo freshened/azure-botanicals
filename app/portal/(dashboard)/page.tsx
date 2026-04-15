@@ -25,6 +25,18 @@ export default function PortalPage() {
           <span className="font-sans text-xs text-accent group-hover:underline">Open →</span>
         </Link>
         <Link
+          href="/portal/catalog"
+          className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md hover:border-accent/30"
+        >
+          <h2 className="font-sans text-sm font-medium tracking-wide text-foreground mb-2">
+            Catalog
+          </h2>
+          <p className="font-sans text-sm text-muted-foreground mb-4">
+            Categories and tags for the shop filters and navigation.
+          </p>
+          <span className="font-sans text-xs text-accent group-hover:underline">Open →</span>
+        </Link>
+        <Link
           href="/portal/settings"
           className="group rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md hover:border-accent/30"
         >
@@ -43,7 +55,7 @@ export default function PortalPage() {
           <p className="font-sans text-sm text-muted-foreground mb-4">
             Preview how customers see the shop.
           </p>
-          <Link href="/#shop" className="font-sans text-xs text-accent hover:underline">
+          <Link href="/shop" className="font-sans text-xs text-accent hover:underline">
             View shop →
           </Link>
         </div>

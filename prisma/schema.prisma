@@ -17,3 +17,109 @@ model ProductExtraImage {
   @@index([stripeProductId])
   @@map("azure_product_extra_images")
 }
+
+model PortalAllowedEmail {
+  id        String   @id @default(cuid())
+  emailNorm String   @unique @map("email_norm")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("azure_portal_allowed_emails")
+}
+
+model PortalOtpChallenge {
+  id           String   @id @default(cuid())
+  emailNorm    String   @map("email_norm")
+  codeHash     String   @map("code_hash")
+  saltB64      String   @map("salt_b64")
+  expiresAt    DateTime @map("expires_at")
+  attemptCount Int      @default(0) @map("attempt_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([emailNorm])
+  @@map("azure_portal_otp_challenges")
+}
+
+model PortalAuthRequestLog {
+  id        String   @id @default(cuid())
+  emailKey  String   @map("email_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([emailKey, createdAt])
+  @@map("azure_portal_auth_request_log")
+}
+
+model SiteCountdown {
+  id               String   @id
+  targetIso        String   @map("target_iso")
+  countdownEnabled Boolean  @default(true) @map("countdown_enabled")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("azure_site_countdown")
+}
+
+model ShopCategory {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("azure_shop_categories")
+}
+
+model ShopTag {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String   @unique
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("azure_shop_tags")
+}
+
+model ProductInventory {
+  id              String   @id @default(cuid())
+  stripeProductId String   @unique @map("stripe_product_id")
+  quantity        Int      @default(0)
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("azure_product_inventory")
+}
+
+model InventoryReservation {
+  id              String   @id @default(cuid())
+  paymentIntentId String   @unique @map("payment_intent_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("azure_inventory_reservations")
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  paymentIntentId String      @unique @map("payment_intent_id")
+  status          String
+  currency        String
+  amountTotal     Int         @map("amount_total")
+  customerEmail   String?     @map("customer_email")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
+  items           OrderItem[]
+
+  @@map("azure_orders")
+}
+
+model OrderItem {
+  id              String @id @default(cuid())
+  orderId         String @map("order_id")
+  stripeProductId String @map("stripe_product_id")
+  stripePriceId   String @map("stripe_price_id")
+  quantity        Int
+  unitAmount      Int    @map("unit_amount")
+  currency        String
+  productName     String @map("product_name")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("azure_order_items")
+}

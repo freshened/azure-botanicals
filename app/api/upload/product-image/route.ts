@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server"
 import { storeProductImage } from "@/lib/store-product-image"
+import { requirePortalSession } from "@/lib/require-portal-session"
 import { requireStripeSecretKey } from "@/lib/stripe-connect"
 
 export async function POST(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
     const form = await request.formData()
     const file = form.get("file")

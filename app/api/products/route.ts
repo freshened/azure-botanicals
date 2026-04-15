@@ -1,8 +1,33 @@
 import { NextResponse } from "next/server"
-import type Stripe from "stripe"
-import { resolveOrderedGallery } from "@/lib/product-gallery"
+import { inventoryByProductIds } from "@/lib/product-inventory"
+import { mapStripeProductToShopPayload } from "@/lib/shop-product"
 import { isDatabaseConfigured, prisma } from "@/lib/prisma"
-import { requireConnectedAccountId, requireStripeSecretKey, stripe } from "@/lib/stripe-connect"
+import { requirePortalSession } from "@/lib/require-portal-session"
+import {
+  buildCategoryNameBySlugMap,
+  buildTagNameBySlugMap,
+  getShopTaxonomy,
+} from "@/lib/shop-taxonomy"
+import { getStripeAccountOptions, requireStripeSecretKey, stripe } from "@/lib/stripe-connect"
+
+async function assertCategoryAndTagAllowed(category: string, tag: string) {
+  if (!isDatabaseConfigured()) return null as string | null
+  try {
+    const catOk = await prisma.shopCategory.findFirst({ where: { name: category } })
+    if (!catOk) {
+      return "Unknown category. Add it under Portal → Catalog or pick an existing category."
+    }
+    if (tag.trim()) {
+      const tagOk = await prisma.shopTag.findFirst({ where: { name: tag.trim() } })
+      if (!tagOk) {
+        return "Unknown tag. Add it under Portal → Catalog or pick an existing tag."
+      }
+    }
+  } catch {
+    return null
+  }
+  return null
+}
 
 async function dbGalleryUrlsByProductIds(ids: string[]) {
   if (!isDatabaseConfigured() || ids.length === 0) {
@@ -25,62 +50,88 @@ async function dbGalleryUrlsByProductIds(ids: string[]) {
   }
 }
 
-export async function GET() {
+function parseInventory(value: unknown) {
+  if (value === null || value === undefined || value === "") return null
+  const n = Number(value)
+  if (!Number.isFinite(n)) return Number.NaN
+  return Math.max(0, Math.floor(n))
+}
+
+export async function GET(request: Request) {
   try {
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const { data: products } = await stripe.products.list(
       {
         active: true,
         expand: ["data.default_price"],
       },
-      {
-        stripeAccount: accountId,
-      }
+      acctOpts
     )
 
     const ids = products.map((p) => p.id)
     const dbMap = await dbGalleryUrlsByProductIds(ids)
+    const invMap = isDatabaseConfigured() ? await inventoryByProductIds(ids) : new Map<string, number>()
 
-    const items = products.map((p) => {
-      const defaultPrice = p.default_price as Stripe.Price | null
-      const amount = defaultPrice?.unit_amount ?? 0
-      const currency = (defaultPrice?.currency ?? "usd").toUpperCase()
-      const stripeImages = Array.isArray(p.images) && p.images.length > 0 ? p.images : []
-      const stripeMain = stripeImages[0] || ""
+    let items = products.map((p) => {
       const dbUrls = dbMap.get(p.id) ?? []
-      const merged = resolveOrderedGallery(stripeMain || undefined, dbUrls)
-      const images = merged.length > 0 ? merged : ["/placeholder.svg"]
-      const metadata = (p.metadata || {}) as Record<string, string>
-
+      const inventoryQuantity = invMap.get(p.id)
+      const base = mapStripeProductToShopPayload(p, dbUrls, inventoryQuantity)
       return {
-        id: p.id,
-        priceId: defaultPrice?.id ?? null,
-        name: p.name,
-        price: amount / 100,
-        currency,
-        image: images[0],
-        images,
+        ...base,
         extraImageUrls: dbUrls,
-        category: metadata.category ?? "Shop",
-        tag: metadata.tag || null,
       }
     })
 
+    const { searchParams } = new URL(request.url)
+    const categorySlug = searchParams.get("category")?.trim().toLowerCase() ?? ""
+    const tagSlug = searchParams.get("tag")?.trim().toLowerCase() ?? ""
+
+    if (categorySlug || tagSlug) {
+      const taxonomy = await getShopTaxonomy()
+      const catMap = buildCategoryNameBySlugMap(taxonomy.categories)
+      const tagMap = buildTagNameBySlugMap(taxonomy.tags)
+      if (categorySlug) {
+        const catName = catMap.get(categorySlug)
+        if (catName) {
+          const want = catName.trim().toLowerCase()
+          items = items.filter((p) => p.category.trim().toLowerCase() === want)
+        } else {
+          items = []
+        }
+      }
+      if (tagSlug) {
+        const tagName = tagMap.get(tagSlug)
+        if (tagName) {
+          const want = tagName.trim().toLowerCase()
+          items = items.filter((p) => (p.tag || "").trim().toLowerCase() === want)
+        } else {
+          items = []
+        }
+      }
+    }
+
     return NextResponse.json(items)
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Stripe error"
-    return NextResponse.json(
-      { error: message },
-      { status: 500 }
-    )
+    let message = "Stripe error"
+    if (err instanceof Error) {
+      message = err.message
+    } else if (typeof err === "object" && err !== null && "message" in err) {
+      message = String((err as { message: unknown }).message)
+    }
+    if (process.env.NODE_ENV === "development") {
+      console.error("[GET /api/products]", message)
+    }
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const body = (await request.json()) as {
       name?: string
       description?: string
@@ -88,6 +139,7 @@ export async function POST(request: Request) {
       category?: string
       tag?: string
       imageUrl?: string
+      inventoryQuantity?: number | null
     }
 
     const name = body.name?.trim()
@@ -95,6 +147,7 @@ export async function POST(request: Request) {
     const category = body.category?.trim() || "Shop"
     const tag = body.tag?.trim() || ""
     const imageUrl = body.imageUrl?.trim() || ""
+    const inventoryQuantity = parseInventory(body.inventoryQuantity)
     const currency = "usd"
     const priceInCents = Number.isFinite(body.priceInCents) ? Math.floor(Number(body.priceInCents)) : NaN
 
@@ -103,6 +156,14 @@ export async function POST(request: Request) {
     }
     if (Number.isNaN(priceInCents) || priceInCents < 50) {
       return NextResponse.json({ error: "priceInCents must be an integer of at least 50." }, { status: 400 })
+    }
+    if (Number.isNaN(inventoryQuantity)) {
+      return NextResponse.json({ error: "inventoryQuantity must be a non-negative integer." }, { status: 400 })
+    }
+
+    const taxErr = await assertCategoryAndTagAllowed(category, tag)
+    if (taxErr) {
+      return NextResponse.json({ error: taxErr }, { status: 400 })
     }
 
     const product = await stripe.products.create(
@@ -119,10 +180,16 @@ export async function POST(request: Request) {
           currency,
         },
       },
-      {
-        stripeAccount: accountId,
-      }
+      acctOpts
     )
+
+    if (isDatabaseConfigured() && inventoryQuantity !== null) {
+      await prisma.productInventory.upsert({
+        where: { stripeProductId: product.id },
+        create: { stripeProductId: product.id, quantity: inventoryQuantity },
+        update: { quantity: inventoryQuantity },
+      })
+    }
 
     return NextResponse.json({
       id: product.id,
@@ -136,8 +203,10 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const body = (await request.json()) as {
       productId?: string
       name?: string
@@ -145,6 +214,7 @@ export async function PATCH(request: Request) {
       priceInCents?: number
       category?: string
       tag?: string
+      inventoryQuantity?: number | null
     }
 
     const productId = body.productId?.trim()
@@ -152,6 +222,7 @@ export async function PATCH(request: Request) {
     const description = body.description?.trim() || ""
     const category = body.category?.trim() || "Shop"
     const tag = body.tag?.trim() || ""
+    const inventoryQuantity = parseInventory(body.inventoryQuantity)
     const currency = "usd"
     const priceInCents =
       Number.isFinite(body.priceInCents) && body.priceInCents !== undefined
@@ -167,6 +238,14 @@ export async function PATCH(request: Request) {
     if (priceInCents !== null && priceInCents < 50) {
       return NextResponse.json({ error: "priceInCents must be at least 50 when provided." }, { status: 400 })
     }
+    if (Number.isNaN(inventoryQuantity)) {
+      return NextResponse.json({ error: "inventoryQuantity must be a non-negative integer." }, { status: 400 })
+    }
+
+    const taxErr = await assertCategoryAndTagAllowed(category, tag)
+    if (taxErr) {
+      return NextResponse.json({ error: taxErr }, { status: 400 })
+    }
 
     const product = await stripe.products.update(
       productId,
@@ -178,9 +257,7 @@ export async function PATCH(request: Request) {
           tag,
         },
       },
-      {
-        stripeAccount: accountId,
-      }
+      acctOpts
     )
 
     if (priceInCents !== null) {
@@ -190,9 +267,7 @@ export async function PATCH(request: Request) {
           unit_amount: priceInCents,
           currency,
         },
-        {
-          stripeAccount: accountId,
-        }
+        acctOpts
       )
 
       await stripe.products.update(
@@ -200,10 +275,16 @@ export async function PATCH(request: Request) {
         {
           default_price: newPrice.id,
         },
-        {
-          stripeAccount: accountId,
-        }
+        acctOpts
       )
+    }
+
+    if (isDatabaseConfigured() && inventoryQuantity !== null) {
+      await prisma.productInventory.upsert({
+        where: { stripeProductId: productId },
+        create: { stripeProductId: productId, quantity: inventoryQuantity },
+        update: { quantity: inventoryQuantity },
+      })
     }
 
     return NextResponse.json({ id: product.id, name: product.name })
@@ -215,8 +296,10 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const body = (await request.json()) as { productId?: string }
     const productId = body.productId?.trim()
 
@@ -229,14 +312,15 @@ export async function DELETE(request: Request) {
       {
         active: false,
       },
-      {
-        stripeAccount: accountId,
-      }
+      acctOpts
     )
 
     if (isDatabaseConfigured()) {
       try {
         await prisma.productExtraImage.deleteMany({
+          where: { stripeProductId: productId },
+        })
+        await prisma.productInventory.deleteMany({
           where: { stripeProductId: productId },
         })
       } catch {

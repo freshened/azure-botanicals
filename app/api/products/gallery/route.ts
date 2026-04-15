@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server"
 import { MAX_GALLERY_IMAGES, resolveOrderedGallery } from "@/lib/product-gallery"
 import { isDatabaseConfigured, prisma } from "@/lib/prisma"
-import { requireConnectedAccountId, requireStripeSecretKey, stripe } from "@/lib/stripe-connect"
+import { requirePortalSession } from "@/lib/require-portal-session"
+import { getStripeAccountOptions, requireStripeSecretKey, stripe } from "@/lib/stripe-connect"
 
 export async function PUT(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const body = (await request.json()) as { productId?: string; imageUrls?: unknown }
 
     const productId = typeof body.productId === "string" ? body.productId.trim() : ""
@@ -56,9 +59,7 @@ export async function PUT(request: Request) {
       {
         images: stripeFirst ? [stripeFirst] : [],
       },
-      {
-        stripeAccount: accountId,
-      }
+      acctOpts
     )
 
     return NextResponse.json({ ok: true, imageUrls })
@@ -70,15 +71,17 @@ export async function PUT(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const gate = await requirePortalSession(request)
+    if (gate instanceof NextResponse) return gate
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
+    const acctOpts = getStripeAccountOptions()
     const { searchParams } = new URL(request.url)
     const productId = searchParams.get("productId")?.trim()
     if (!productId) {
       return NextResponse.json({ error: "productId is required." }, { status: 400 })
     }
 
-    const p = await stripe.products.retrieve(productId, { stripeAccount: accountId })
+    const p = await stripe.products.retrieve(productId, {}, acctOpts)
     const stripeMain = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : ""
 
     let dbUrls: string[] = []

@@ -1,6 +1,6 @@
 import Link from "next/link"
+import { PortalMobileMenu } from "@/components/portal-mobile-menu"
 import { PortalSidebar } from "@/components/portal-sidebar"
-import { Menu } from "lucide-react"
 
 export function PortalShell({ children }: { children: React.ReactNode }) {
   return (
@@ -12,25 +12,7 @@ export function PortalShell({ children }: { children: React.ReactNode }) {
             <Link href="/portal" className="font-serif text-lg tracking-tight">
               Admin
             </Link>
-            <details className="relative">
-              <summary className="list-none cursor-pointer p-2 rounded-md border border-border">
-                <Menu className="h-5 w-5" />
-              </summary>
-              <div className="absolute right-0 mt-1 w-48 rounded-lg border border-border bg-card shadow-lg py-1 z-50">
-                <Link href="/portal" className="block px-4 py-2 font-sans text-sm hover:bg-muted">
-                  Overview
-                </Link>
-                <Link href="/portal/products" className="block px-4 py-2 font-sans text-sm hover:bg-muted">
-                  Products
-                </Link>
-                <Link href="/portal/settings" className="block px-4 py-2 font-sans text-sm hover:bg-muted">
-                  Settings
-                </Link>
-                <Link href="/" className="block px-4 py-2 font-sans text-sm text-accent border-t border-border">
-                  Back to site
-                </Link>
-              </div>
-            </details>
+            <PortalMobileMenu />
           </div>
         </header>
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 w-full max-w-full mx-auto">{children}</main>

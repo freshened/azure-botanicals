@@ -37,14 +37,21 @@ export function getApplicationFeeAmount() {
   return parsed
 }
 
-export function requireConnectedAccountId() {
+export function stripeConnectEnabled() {
+  return process.env.STRIPE_USE_CONNECT !== "false"
+}
+
+export function getStripeAccountOptions(): { stripeAccount?: string } {
+  if (!stripeConnectEnabled()) {
+    return {}
+  }
   const accountId = process.env.STRIPE_CONNECTED_ACCOUNT_ID?.trim()
   if (!accountId) {
     throw new Error(
-      "Missing STRIPE_CONNECTED_ACCOUNT_ID. Add your seller connected account ID to environment configuration."
+      "Missing STRIPE_CONNECTED_ACCOUNT_ID. Add your connected account id, or set STRIPE_USE_CONNECT=false in .env.local to use your platform Stripe account only (catalog and checkout without Connect)."
     )
   }
-  return accountId
+  return { stripeAccount: accountId }
 }
 
 export function getPlatformFeePercent() {

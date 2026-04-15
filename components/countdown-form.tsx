@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { portalFetch } from "@/lib/portal-fetch"
 
 function toLocalDatetime(iso: string): string {
   const d = new Date(iso)
@@ -21,11 +22,13 @@ export function CountdownForm() {
   const [message, setMessage] = useState<{ type: "ok" | "error"; text: string } | null>(null)
 
   useEffect(() => {
-    fetch("/api/countdown")
+    portalFetch("/api/countdown", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data?.target) setTarget(toLocalDatetime(data.target))
-        if (typeof data?.countdownEnabled === "boolean") setCountdownEnabled(data.countdownEnabled)
+        const ce = data?.countdownEnabled
+        if (ce === true || ce === false) setCountdownEnabled(ce)
+        else if (ce === 0 || ce === 1) setCountdownEnabled(ce === 1)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -35,7 +38,7 @@ export function CountdownForm() {
     if (!target.trim()) return
     setSaving(true)
     setMessage(null)
-    fetch("/api/countdown", {
+    portalFetch("/api/countdown", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -61,7 +64,7 @@ export function CountdownForm() {
     setCountdownEnabled(next)
     setSaving(true)
     setMessage(null)
-    fetch("/api/countdown", {
+    portalFetch("/api/countdown", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ countdownEnabled: next }),

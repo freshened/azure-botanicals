@@ -1,6 +1,6 @@
 "use client"
 
-import Image from "next/image"
+import { ProductFrameImage, ProductThumbImage } from "@/components/product-frame-image"
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react"
 import { ChevronDown, ChevronUp } from "lucide-react"
 import {
@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { portalFetch } from "@/lib/portal-fetch"
 import { MAX_GALLERY_IMAGES } from "@/lib/product-gallery"
 
 type ProductRow = {
@@ -23,10 +24,12 @@ type ProductRow = {
   extraImageUrls?: string[]
   category: string
   tag: string | null
+  inventoryQuantity: number | null
+  inStock: boolean
 }
 
-const categoryOptions = ["Shop", "Rare Plants", "Tissue Culture", "Substrate & Pots", "Accessories"]
-const tagOptions = ["", "New", "Bestseller", "Limited", "Seasonal"]
+const categoryFallback = ["Shop", "Rare Plants", "Tissue Culture", "Substrate & Pots", "Accessories"]
+const tagFallback = ["New", "Bestseller", "Limited", "Seasonal"]
 
 const initialForm = {
   productId: "",
@@ -35,6 +38,7 @@ const initialForm = {
   price: "25.00",
   category: "Shop",
   tag: "",
+  inventoryQuantity: "10",
 }
 
 const acceptImages = "image/jpeg,image/png,image/webp,image/gif"
@@ -42,7 +46,7 @@ const acceptImages = "image/jpeg,image/png,image/webp,image/gif"
 async function uploadProductFile(file: File) {
   const fd = new FormData()
   fd.append("file", file)
-  const res = await fetch("/api/upload/product-image", { method: "POST", body: fd })
+  const res = await portalFetch("/api/upload/product-image", { method: "POST", body: fd })
   const data = await res.json()
   if (!res.ok) throw new Error(data?.error || "Upload failed.")
   return data.url as string
@@ -53,6 +57,8 @@ function filterPlaceholderImages(urls: string[]) {
 }
 
 export function PortalProductsManager() {
+  const [categoryOptions, setCategoryOptions] = useState<string[]>(categoryFallback)
+  const [tagOptions, setTagOptions] = useState<string[]>(tagFallback)
   const [products, setProducts] = useState<ProductRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -78,7 +84,7 @@ export function PortalProductsManager() {
   const loadProducts = () => {
     setLoading(true)
     setMessage(null)
-    fetch("/api/products")
+    portalFetch("/api/products")
       .then(async (res) => {
         const data = await res.json()
         if (!res.ok) throw new Error(data?.error || "Failed to load products.")
@@ -93,6 +99,18 @@ export function PortalProductsManager() {
   }, [])
 
   useEffect(() => {
+    fetch("/api/shop/taxonomy")
+      .then((r) => r.json())
+      .then((d) => {
+        const cats = d?.categories as { name: string }[] | undefined
+        const tags = d?.tags as { name: string }[] | undefined
+        if (cats?.length) setCategoryOptions(cats.map((c) => c.name))
+        if (tags?.length) setTagOptions(tags.map((t) => t.name))
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
     const urls = createImageFiles.map((f) => URL.createObjectURL(f))
     setCreateFilePreviews(urls)
     return () => urls.forEach((u) => URL.revokeObjectURL(u))
@@ -103,7 +121,7 @@ export function PortalProductsManager() {
   }
 
   const applyGalleryToServer = async (productId: string, imageUrls: string[]) => {
-    const res = await fetch("/api/products/gallery", {
+    const res = await portalFetch("/api/products/gallery", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ productId, imageUrls }),
@@ -134,6 +152,8 @@ export function PortalProductsManager() {
       price: product.price.toFixed(2),
       category: product.category || "Shop",
       tag: product.tag || "",
+      inventoryQuantity:
+        typeof product.inventoryQuantity === "number" ? String(product.inventoryQuantity) : "0",
     })
     setEditGalleryUrls(filterPlaceholderImages(product.images))
     setEditOpen(true)
@@ -184,8 +204,12 @@ export function PortalProductsManager() {
     setMessage(null)
     try {
       const numericPrice = Number.parseFloat(form.price)
+      const numericInventory = Number.parseFloat(form.inventoryQuantity)
       if (!Number.isFinite(numericPrice) || numericPrice < 0.5) {
         throw new Error("Price must be at least $0.50.")
+      }
+      if (!Number.isFinite(numericInventory) || numericInventory < 0) {
+        throw new Error("Inventory must be 0 or greater.")
       }
       const priceInCents = Math.round(numericPrice * 100)
 
@@ -202,9 +226,10 @@ export function PortalProductsManager() {
         category: form.category,
         tag: form.tag,
         imageUrl,
+        inventoryQuantity: Math.floor(numericInventory),
       }
 
-      const res = await fetch("/api/products", {
+      const res = await portalFetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -214,7 +239,7 @@ export function PortalProductsManager() {
       const productId = data.id as string
 
       if (urls.length > 0) {
-        const gRes = await fetch("/api/products/gallery", {
+        const gRes = await portalFetch("/api/products/gallery", {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ productId, imageUrls: urls }),
@@ -240,8 +265,12 @@ export function PortalProductsManager() {
     setMessage(null)
     try {
       const numericPrice = Number.parseFloat(editForm.price)
+      const numericInventory = Number.parseFloat(editForm.inventoryQuantity)
       if (!Number.isFinite(numericPrice) || numericPrice < 0.5) {
         throw new Error("Price must be at least $0.50.")
+      }
+      if (!Number.isFinite(numericInventory) || numericInventory < 0) {
+        throw new Error("Inventory must be 0 or greater.")
       }
       const priceInCents = Math.round(numericPrice * 100)
 
@@ -252,9 +281,10 @@ export function PortalProductsManager() {
         priceInCents,
         category: editForm.category,
         tag: editForm.tag,
+        inventoryQuantity: Math.floor(numericInventory),
       }
 
-      const res = await fetch("/api/products", {
+      const res = await portalFetch("/api/products", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -275,7 +305,7 @@ export function PortalProductsManager() {
     setSaving(true)
     setMessage(null)
     try {
-      const res = await fetch("/api/products", {
+      const res = await portalFetch("/api/products", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId }),
@@ -318,18 +348,24 @@ export function PortalProductsManager() {
                   className="flex gap-3 rounded-xl border border-border bg-background/50 p-3 min-w-0"
                 >
                   <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
-                    <Image
-                      src={product.image || "/placeholder.svg"}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      unoptimized={(product.image || "").startsWith("http")}
-                    />
+                    <span className="absolute inset-0">
+                      <ProductThumbImage
+                        src={product.image || "/placeholder.svg"}
+                        sizes="56px"
+                        unoptimized={(product.image || "").startsWith("http")}
+                      />
+                    </span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-sans text-sm font-medium text-foreground line-clamp-2">{product.name}</p>
                     <p className="font-sans text-[10px] text-muted-foreground truncate mt-0.5">{product.id}</p>
                     <p className="font-sans text-xs text-muted-foreground mt-1">{product.category}</p>
+                    <p className="font-sans text-[11px] text-muted-foreground mt-0.5">
+                      Stock:{" "}
+                      {typeof product.inventoryQuantity === "number"
+                        ? `${product.inventoryQuantity} ${product.inStock ? "" : "(sold out)"}`
+                        : "Unlimited"}
+                    </p>
                     <p className="font-sans text-sm mt-1">
                       {product.currency === "USD" ? "$" : `${product.currency} `}
                       {product.price.toFixed(2)}
@@ -362,6 +398,7 @@ export function PortalProductsManager() {
                   <col className="w-12" />
                   <col />
                   <col className="w-[22%] max-w-[10rem]" />
+                  <col className="w-20" />
                   <col className="w-24" />
                   <col className="w-36" />
                 </colgroup>
@@ -377,6 +414,9 @@ export function PortalProductsManager() {
                     <th className="text-left py-2 pr-2 font-sans text-xs uppercase tracking-[0.12em] text-muted-foreground">
                       Price
                     </th>
+                    <th className="text-left py-2 pr-2 font-sans text-xs uppercase tracking-[0.12em] text-muted-foreground">
+                      Stock
+                    </th>
                     <th className="text-right py-2 font-sans text-xs uppercase tracking-[0.12em] text-muted-foreground">
                       Actions
                     </th>
@@ -387,13 +427,13 @@ export function PortalProductsManager() {
                     <tr key={product.id} className="border-b border-border/60">
                       <td className="py-2.5 pr-1 align-middle">
                         <div className="relative h-9 w-9 overflow-hidden rounded-md border border-border bg-muted">
-                          <Image
-                            src={product.image || "/placeholder.svg"}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            unoptimized={(product.image || "").startsWith("http")}
-                          />
+                          <span className="absolute inset-0">
+                            <ProductThumbImage
+                              src={product.image || "/placeholder.svg"}
+                              sizes="36px"
+                              unoptimized={(product.image || "").startsWith("http")}
+                            />
+                          </span>
                         </div>
                       </td>
                       <td className="py-2.5 pr-2 align-middle min-w-0">
@@ -404,6 +444,11 @@ export function PortalProductsManager() {
                       <td className="py-2.5 pr-2 align-middle whitespace-nowrap">
                         {product.currency === "USD" ? "$" : `${product.currency} `}
                         {product.price.toFixed(2)}
+                      </td>
+                      <td className="py-2.5 pr-2 align-middle whitespace-nowrap text-muted-foreground">
+                        {typeof product.inventoryQuantity === "number"
+                          ? `${product.inventoryQuantity}${product.inStock ? "" : " (sold out)"}`
+                          : "∞"}
                       </td>
                       <td className="py-2.5 text-right align-middle">
                         <div className="flex flex-col gap-1 items-end">
@@ -453,7 +498,7 @@ export function PortalProductsManager() {
             placeholder="Description"
             className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm min-h-24"
           />
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 font-sans text-sm text-muted-foreground">
                 $
@@ -469,8 +514,20 @@ export function PortalProductsManager() {
                 required
               />
             </div>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={form.inventoryQuantity}
+              onChange={(e) => setForm((prev) => ({ ...prev, inventoryQuantity: e.target.value }))}
+              placeholder="0"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
+              required
+            />
           </div>
-          <p className="font-sans text-xs text-muted-foreground">Currency is fixed to USD for this store.</p>
+          <p className="font-sans text-xs text-muted-foreground">
+            Currency is fixed to USD. Inventory quantity of 0 marks the product sold out.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <select
               value={form.category}
@@ -489,13 +546,11 @@ export function PortalProductsManager() {
               className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
             >
               <option value="">No tag</option>
-              {tagOptions
-                .filter((option) => option)
-                .map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
+              {tagOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
           </div>
           <div className="space-y-2">
@@ -527,15 +582,21 @@ export function PortalProductsManager() {
             {createFilePreviews.length > 0 && (
               <ul className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {createFilePreviews.map((src, i) => (
-                  <li key={`${i}-${src}`} className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted">
-                    <Image src={src} alt="" fill className="object-cover" unoptimized />
-                    <span className="absolute left-1 top-1 rounded bg-background/90 px-1 font-sans text-[10px]">
+                  <li key={`${i}-${src}`} className="relative aspect-square w-full overflow-hidden rounded-md border border-border">
+                    <ProductFrameImage
+                      src={src}
+                      alt=""
+                      sizes="120px"
+                      unoptimized
+                      className="absolute inset-0 rounded-md"
+                    />
+                    <span className="absolute left-1 top-1 z-10 rounded bg-background/90 px-1 font-sans text-[10px]">
                       {i === 0 ? "1 · Stripe" : `${i + 1}`}
                     </span>
                     <button
                       type="button"
                       onClick={() => setCreateImageFiles((prev) => prev.filter((_, j) => j !== i))}
-                      className="absolute right-1 top-1 rounded bg-background/90 px-1 font-sans text-[10px] text-destructive"
+                      className="absolute right-1 top-1 z-10 rounded bg-background/90 px-1 font-sans text-[10px] text-destructive"
                     >
                       ×
                     </button>
@@ -577,13 +638,19 @@ export function PortalProductsManager() {
                   {editGalleryUrls.map((url, i) => (
                     <li
                       key={`${url}-${i}`}
-                      className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted"
+                      className="relative aspect-square w-full overflow-hidden rounded-md border border-border"
                     >
-                      <Image src={url} alt="" fill className="object-cover" unoptimized={url.startsWith("http")} />
-                      <span className="absolute left-1 top-1 rounded bg-background/90 px-1 font-sans text-[10px]">
+                      <ProductFrameImage
+                        src={url}
+                        alt=""
+                        sizes="160px"
+                        unoptimized={url.startsWith("http")}
+                        className="absolute inset-0 rounded-md"
+                      />
+                      <span className="absolute left-1 top-1 z-10 rounded bg-background/90 px-1 font-sans text-[10px]">
                         {i === 0 ? "1 · Stripe" : `${i + 1}`}
                       </span>
-                      <div className="absolute right-1 top-1 flex flex-col gap-0.5">
+                      <div className="absolute right-1 top-1 z-10 flex flex-col gap-0.5">
                         <button
                           type="button"
                           disabled={gallerySaving || i === 0}
@@ -607,7 +674,7 @@ export function PortalProductsManager() {
                         type="button"
                         disabled={gallerySaving}
                         onClick={() => editRemoveGallery(i)}
-                        className="absolute bottom-1 left-1 right-1 rounded bg-background/90 py-0.5 font-sans text-[10px] text-destructive hover:bg-background"
+                        className="absolute bottom-1 left-1 right-1 z-10 rounded bg-background/90 py-0.5 font-sans text-[10px] text-destructive hover:bg-background"
                       >
                         Remove
                       </button>
@@ -666,6 +733,16 @@ export function PortalProductsManager() {
                 required
               />
             </div>
+            <input
+              type="number"
+              min={0}
+              step={1}
+              value={editForm.inventoryQuantity}
+              onChange={(e) => setEditForm((prev) => ({ ...prev, inventoryQuantity: e.target.value }))}
+              placeholder="0"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
+              required
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <select
                 value={editForm.category}
@@ -684,13 +761,11 @@ export function PortalProductsManager() {
                 className="w-full rounded-md border border-input bg-background px-3 py-2 font-sans text-sm"
               >
                 <option value="">No tag</option>
-                {tagOptions
-                  .filter((option) => option)
-                  .map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
+                {tagOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
               </select>
             </div>
             <DialogFooter>

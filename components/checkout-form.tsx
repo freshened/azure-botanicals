@@ -34,13 +34,25 @@ function CheckoutInner({ onPaid }: { onPaid: () => void }) {
     })
 
     if (result.error) {
+      const forceSuccessRedirect =
+        process.env.NEXT_PUBLIC_CHECKOUT_FORCE_SUCCESS_REDIRECT === "true" &&
+        process.env.NODE_ENV !== "production"
+      if (forceSuccessRedirect) {
+        onPaid()
+        window.location.href = "/success?mock=1"
+        return
+      }
       setError(result.error.message || "Payment failed.")
       setSubmitting(false)
       return
     }
 
+    const intentId =
+      result.paymentIntent && typeof result.paymentIntent.id === "string"
+        ? result.paymentIntent.id
+        : ""
     onPaid()
-    window.location.href = "/success"
+    window.location.href = intentId ? `/success?payment_intent=${encodeURIComponent(intentId)}` : "/success"
   }
 
   return (

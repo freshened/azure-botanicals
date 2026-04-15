@@ -47,16 +47,16 @@ export function RotatingBanner() {
 
   useEffect(() => {
     const load = () => {
-      fetch("/api/countdown")
+      fetch("/api/countdown", { cache: "no-store" })
         .then((res) => res.json())
         .then((data) => {
           if (data?.target) {
             const d = new Date(data.target)
             if (!Number.isNaN(d.getTime())) setCountdownTarget(d)
           }
-          if (typeof data?.countdownEnabled === "boolean") {
-            setCountdownEnabled(data.countdownEnabled)
-          }
+          const ce = data?.countdownEnabled
+          if (ce === true || ce === false) setCountdownEnabled(ce)
+          else if (ce === 0 || ce === 1) setCountdownEnabled(ce === 1)
         })
         .catch(() => {})
     }

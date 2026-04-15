@@ -1,11 +1,7 @@
 import Link from "next/link"
+import { FooterShopLinks } from "@/components/footer-shop-links"
 
 const footerLinks = {
-  Shop: [
-    { label: "Rare Plants", href: "/#shop" },
-    { label: "Tissue Culture", href: "/#shop" },
-    { label: "Substrate & Pots", href: "/#shop" },
-  ],
   About: [
     { label: "Our Story", href: "/about" },
     { label: "Terms of Service", href: "/terms" },
@@ -46,7 +42,10 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Link columns */}
+          <div>
+            <h4 className="font-sans text-xs tracking-[0.2em] uppercase text-foreground mb-6">Shop</h4>
+            <FooterShopLinks />
+          </div>
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
               <h4 className="font-sans text-xs tracking-[0.2em] uppercase text-foreground mb-6">

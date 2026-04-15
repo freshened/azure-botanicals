@@ -3,8 +3,10 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { ProductThumbImage } from "@/components/product-frame-image"
 import { useRouter } from "next/navigation"
 import { ShoppingBag, Search, Menu, X, User, ChevronDown } from "lucide-react"
+import type { TaxonomyItem } from "@/lib/shop-taxonomy"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,21 +15,39 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/contexts/cart-context"
 
-const shopCategories = [
-  { label: "Rare Plants", href: "/#shop" },
-  { label: "Tissue Culture", href: "/#shop" },
-  { label: "Substrate & Pots", href: "/#shop" },
+const shopNavFallback: { label: string; href: string }[] = [
+  { label: "Shop all", href: "/shop" },
+  { label: "Rare Plants", href: "/shop?category=rare-plants" },
+  { label: "Tissue Culture", href: "/shop?category=tissue-culture" },
+  { label: "Substrate & Pots", href: "/shop?category=substrate-pots" },
 ]
 
 export function Navbar() {
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [shopDropdownOpen, setShopDropdownOpen] = useState(false)
+  const [shopNavLinks, setShopNavLinks] = useState<{ label: string; href: string }[]>(shopNavFallback)
   const { items, removeItem, total, count, updateQuantity } = useCart()
 
   useEffect(() => {
     if (!mobileOpen) setShopDropdownOpen(false)
   }, [mobileOpen])
+
+  useEffect(() => {
+    fetch("/api/shop/taxonomy")
+      .then((r) => r.json())
+      .then((d) => {
+        const cats = (d?.categories as TaxonomyItem[] | undefined) ?? []
+        setShopNavLinks([
+          { label: "Shop all", href: "/shop" },
+          ...cats.map((c) => ({
+            label: c.name,
+            href: `/shop?category=${encodeURIComponent(c.slug)}`,
+          })),
+        ])
+      })
+      .catch(() => setShopNavLinks(shopNavFallback))
+  }, [])
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
@@ -50,8 +70,8 @@ export function Navbar() {
                 <ChevronDown className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-[180px]">
-                {shopCategories.map((cat) => (
-                  <DropdownMenuItem key={cat.label} asChild>
+                {shopNavLinks.map((cat) => (
+                  <DropdownMenuItem key={cat.href + cat.label} asChild>
                     <Link href={cat.href} className="font-sans uppercase cursor-pointer">
                       {cat.label}
                     </Link>
@@ -115,7 +135,13 @@ export function Navbar() {
                       {items.map((item) => (
                         <div key={item.priceId} className="flex gap-3 p-3 border-b border-border/50">
                           <div className="relative w-12 h-12 shrink-0 rounded overflow-hidden bg-muted">
-                            <Image src={item.image} alt="" fill className="object-cover" unoptimized={item.image.startsWith("http")} />
+                            <span className="absolute inset-0">
+                              <ProductThumbImage
+                                src={item.image}
+                                sizes="48px"
+                                unoptimized={item.image.startsWith("http")}
+                              />
+                            </span>
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-sans text-sm truncate">{item.name}</p>
@@ -171,9 +197,9 @@ export function Navbar() {
               </button>
               {shopDropdownOpen && (
                 <div className="flex flex-col gap-0 pl-3 pb-2">
-                  {shopCategories.map((cat) => (
+                  {shopNavLinks.map((cat) => (
                     <Link
-                      key={cat.label}
+                      key={cat.href + cat.label}
                       href={cat.href}
                       className="py-2.5 text-sm font-sans text-muted-foreground hover:text-accent transition-colors"
                       onClick={() => setMobileOpen(false)}

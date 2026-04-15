@@ -2,17 +2,20 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Package, Settings } from "lucide-react"
+import { LayoutDashboard, LogOut, Package, Settings, Tags } from "lucide-react"
+import { usePortalSignOut } from "@/components/use-portal-sign-out"
 import { cn } from "@/lib/utils"
 
 const nav = [
   { href: "/portal", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/portal/products", label: "Products", icon: Package, exact: false },
+  { href: "/portal/catalog", label: "Catalog", icon: Tags, exact: false },
   { href: "/portal/settings", label: "Settings", icon: Settings, exact: false },
 ]
 
 export function PortalSidebar() {
   const pathname = usePathname()
+  const signOut = usePortalSignOut()
 
   const active = (href: string, exact: boolean) => {
     if (exact) return pathname === href
@@ -48,11 +51,16 @@ export function PortalSidebar() {
           )
         })}
       </nav>
-      <div className="p-4 border-t border-border">
-        <Link
-          href="/"
-          className="font-sans text-xs text-accent hover:underline"
+      <div className="p-4 border-t border-border space-y-2">
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="flex items-center gap-2 w-full rounded-lg px-3 py-2 font-sans text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
         >
+          <LogOut className="h-4 w-4 shrink-0 opacity-80" />
+          Sign out
+        </button>
+        <Link href="/" className="block font-sans text-xs text-accent hover:underline px-3">
           ← Back to site
         </Link>
       </div>

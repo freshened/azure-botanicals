@@ -1,16 +1,24 @@
 import { NextResponse } from "next/server"
+import { isDatabaseConfigured, prisma } from "@/lib/prisma"
 import {
   getPlatformFeePercent,
-  requireConnectedAccountId,
+  getStripeAccountOptions,
   requireStripeSecretKey,
   stripe,
+  stripeConnectEnabled,
 } from "@/lib/stripe-connect"
+
+type RequestLineItem = {
+  priceId: string
+  quantity: number
+}
 
 export async function POST(request: Request) {
   try {
     requireStripeSecretKey()
-    const accountId = requireConnectedAccountId()
-    const usePlatformOnly = process.env.CHECKOUT_USE_PLATFORM_ONLY === "true"
+    const acctOpts = getStripeAccountOptions()
+    const connectOn = stripeConnectEnabled()
+    const usePlatformOnly = !connectOn || process.env.CHECKOUT_USE_PLATFORM_ONLY === "true"
     const publishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
     if (!publishableKey) {
       return NextResponse.json(
@@ -20,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const lineItems = body?.lineItems as Array<{ priceId: string; quantity: number }> | undefined
+    const lineItems = body?.lineItems as RequestLineItem[] | undefined
     if (!Array.isArray(lineItems) || lineItems.length === 0) {
       return NextResponse.json(
         { error: "lineItems required (array of { priceId, quantity })" },
@@ -33,13 +41,7 @@ export async function POST(request: Request) {
 
     for (const item of lineItems) {
       const quantity = Math.max(1, Math.floor(item.quantity))
-      const price = await stripe.prices.retrieve(
-        item.priceId,
-        {},
-        {
-          stripeAccount: accountId,
-        }
-      )
+      const price = await stripe.prices.retrieve(item.priceId, {}, acctOpts)
       if (price.unit_amount === null) {
         return NextResponse.json(
           { error: `Price ${item.priceId} does not have unit_amount.` },
@@ -48,6 +50,23 @@ export async function POST(request: Request) {
       }
       amount += price.unit_amount * quantity
       metadata[`price_${item.priceId}`] = String(quantity)
+      metadata[`product_${item.priceId}`] = String(price.product)
+
+      if (isDatabaseConfigured()) {
+        const productId = String(price.product)
+        const inv = await prisma.productInventory.findUnique({
+          where: { stripeProductId: productId },
+          select: { quantity: true },
+        })
+        if (inv && inv.quantity < quantity) {
+          return NextResponse.json(
+            {
+              error: inv.quantity <= 0 ? "One or more items are sold out." : "Some items no longer have enough stock.",
+            },
+            { status: 409 }
+          )
+        }
+      }
     }
 
     const feePercent = getPlatformFeePercent()
@@ -60,17 +79,13 @@ export async function POST(request: Request) {
       metadata,
     }
 
-    if (!usePlatformOnly) {
+    if (connectOn && !usePlatformOnly) {
       intentPayload.application_fee_amount = applicationFeeAmount
     }
 
     const intent = await stripe.paymentIntents.create(
       intentPayload,
-      usePlatformOnly
-        ? undefined
-        : {
-            stripeAccount: accountId,
-          }
+      connectOn && !usePlatformOnly ? acctOpts : undefined
     )
 
     if (!intent.client_secret) {
@@ -83,8 +98,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       clientSecret: intent.client_secret,
       publishableKey,
-      stripeAccountId: accountId,
-      checkoutMode: usePlatformOnly ? "platform_only" : "connect_direct_charge",
+      stripeAccountId: connectOn && !usePlatformOnly ? acctOpts.stripeAccount : undefined,
+      checkoutMode: connectOn && !usePlatformOnly ? "connect_direct_charge" : "platform_only",
     })
   } catch (err) {
     const message = err instanceof Error ? err.message : "Checkout error"
