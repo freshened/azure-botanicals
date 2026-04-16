@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { SuccessOrderStatus } from "@/components/success-order-status"
 
 export default function SuccessPage() {
@@ -7,7 +8,9 @@ export default function SuccessPage() {
       <p className="font-sans text-sm text-muted-foreground">
         Payment received. We are confirming your order details now.
       </p>
-      <SuccessOrderStatus />
+      <Suspense fallback={<p className="font-sans text-sm text-muted-foreground mt-6">Loading order status…</p>}>
+        <SuccessOrderStatus />
+      </Suspense>
     </main>
   )
 }

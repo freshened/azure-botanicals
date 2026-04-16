@@ -143,13 +143,14 @@ export async function POST(request: Request) {
     }
 
     const name = body.name?.trim()
-    const description = body.description?.trim() || ""
     const category = body.category?.trim() || "Shop"
     const tag = body.tag?.trim() || ""
     const imageUrl = body.imageUrl?.trim() || ""
     const inventoryQuantity = parseInventory(body.inventoryQuantity)
     const currency = "usd"
     const priceInCents = Number.isFinite(body.priceInCents) ? Math.floor(Number(body.priceInCents)) : NaN
+
+    const descriptionTrim = body.description?.trim() ?? ""
 
     if (!name) {
       return NextResponse.json({ error: "name is required." }, { status: 400 })
@@ -166,22 +167,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: taxErr }, { status: 400 })
     }
 
-    const product = await stripe.products.create(
-      {
-        name,
-        description,
-        images: imageUrl ? [imageUrl] : [],
-        metadata: {
-          category,
-          tag,
-        },
-        default_price_data: {
-          unit_amount: priceInCents,
-          currency,
-        },
+    const createParams: Parameters<typeof stripe.products.create>[0] = {
+      name,
+      images: imageUrl ? [imageUrl] : [],
+      metadata: {
+        category,
+        tag,
       },
-      acctOpts
-    )
+      default_price_data: {
+        unit_amount: priceInCents,
+        currency,
+      },
+    }
+    if (descriptionTrim) {
+      createParams.description = descriptionTrim
+    }
+    const product = await stripe.products.create(createParams, acctOpts)
 
     if (isDatabaseConfigured() && inventoryQuantity !== null) {
       await prisma.productInventory.upsert({
@@ -219,7 +220,7 @@ export async function PATCH(request: Request) {
 
     const productId = body.productId?.trim()
     const name = body.name?.trim()
-    const description = body.description?.trim() || ""
+    const descriptionTrim = body.description?.trim() ?? ""
     const category = body.category?.trim() || "Shop"
     const tag = body.tag?.trim() || ""
     const inventoryQuantity = parseInventory(body.inventoryQuantity)
@@ -247,18 +248,17 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: taxErr }, { status: 400 })
     }
 
-    const product = await stripe.products.update(
-      productId,
-      {
-        name,
-        description,
-        metadata: {
-          category,
-          tag,
-        },
+    const updateParams: Parameters<typeof stripe.products.update>[1] = {
+      name,
+      metadata: {
+        category,
+        tag,
       },
-      acctOpts
-    )
+    }
+    if (descriptionTrim) {
+      updateParams.description = descriptionTrim
+    }
+    const product = await stripe.products.update(productId, updateParams, acctOpts)
 
     if (priceInCents !== null) {
       const newPrice = await stripe.prices.create(

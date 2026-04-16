@@ -48,7 +48,7 @@ export async function storeProductImage(
     )
   }
 
-  const dir = path.join(process.cwd(), "public", "uploads", "product-images")
+  const dir = path.join(process.cwd(), "storage", "product-images")
   await mkdir(dir, { recursive: true })
   const filename = `${randomUUID()}${ext}`
   await writeFile(path.join(dir, filename), buffer)
